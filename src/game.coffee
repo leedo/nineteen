@@ -1,14 +1,19 @@
 class Game
   constructor: (canvas) ->
     @board = new Board()
-    @board.add_row()
+    @board.add_pieces()
     @canvas = canvas
     @ctx = @canvas.getContext("2d")
+    console.log @board.cols
     @interval = setInterval((=> @render()), 100)
-    @incr = setInterval((=> @board.add_row()), 10000)
+    @incr = setInterval((=> @board.add_pieces()), 1000)
     @resize()
     $(window).on "resize", (=> @resize())
+    $(@canvas).on "click", ((e)=> @click(e))
     @colors = ["red", "green", "blue", "yellow", "orange", "pink", "purple"]
+
+  click: (e) ->
+    console.log(e)
 
   resize: ->
     @scale = parseInt(Math.min(@canvas.width, @canvas.height) / Math.max(@board.size.rows, @board.size.cols))
@@ -44,22 +49,21 @@ class Game
     @clear()
     @draw_grid()
 
-    row_count = 0
     @ctx.font = (@scale * 0.66) + "px sans-serif"
     @ctx.strokeStyle = "#eee"
     @ctx.textAlign = "center"
     @ctx.textBaseline = "middle"
 
-    for row in @board.rows
-      col = 0
-      y = @height - (row_count * @scale) - @scale
-      for piece in row
-        x = col * @scale
-        if !piece.empty
-          @ctx.fillStyle = @colors[piece.value]
-          @ctx.fillRect x, y, @scale, @scale
-          @ctx.strokeRect x, y, @scale, @scale
-          @ctx.fillStyle = "#fff"
-          @ctx.fillText piece.value, x + (@scale / 2), y + (@scale / 2)
-        col++
-      row_count++
+    for i in [0 .. @board.cols.length - 1]
+      col = @board.cols[i]
+      x = i * @scale
+      if col.length
+        for j in [0 .. col.length - 1]
+          piece = col[j]
+          y = @height - (j * @scale) - @scale
+          if piece
+            @ctx.fillStyle = @colors[piece.value]
+            @ctx.fillRect x, y, @scale, @scale
+            @ctx.strokeRect x, y, @scale, @scale
+            @ctx.fillStyle = "#fff"
+            @ctx.fillText piece.value, x + (@scale / 2), y + (@scale / 2)
