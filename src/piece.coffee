@@ -1,9 +1,9 @@
 class Piece
-  constructor: (max) ->
+  constructor: (max, empty) ->
     @dragging = false
     @empty    = false
 
-    if Math.random() > 0.5
+    if empty || Math.random() > 0.5
       @value = 0
       @empty = true
     else

@@ -1,8 +1,11 @@
 html, body {
   margin: 0;
   padding: 0;
+  background: #eee;
 }
 
 #board {
-  margin: 0 auto;
+  display: block;
+  margin: 20px auto;
+  width: 500px;
 }
