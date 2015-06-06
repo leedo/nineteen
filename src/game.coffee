@@ -1,21 +1,35 @@
 class Game
-  constructor: (canvas) ->
+  constructor: (@canvas) ->
     @board = new Board()
     @board.add_pieces()
-    @canvas = canvas
     @ctx = @canvas.getContext("2d")
-    console.log @board.cols
-    @interval = setInterval((=> @render()), 100)
-    @incr = setInterval((=> @board.add_pieces()), 1000)
     @resize()
-    $(window).on "resize", (=> @resize())
-    $(@canvas).on "click", ((e)=> @click(e))
+
+    @interval = setInterval @render, 100
+    @incr = setInterval @tick, 1000
+
+    $(window).on "resize", @resize
+    $(@canvas).on "click", @click
+
     @colors = ["red", "green", "blue", "yellow", "orange", "pink", "purple"]
 
-  click: (e) ->
+  tick: =>
+    @board.add_pieces()
+    if @lost()
+      clearInterval @incr
+      @render()
+      alert "You lose"
+
+  lost: ->
+    for col in @board.cols
+      if col.length > @board.size.rows - 1
+        return true
+    return false
+
+  click: (e) =>
     console.log(e)
 
-  resize: ->
+  resize: =>
     @scale = parseInt(Math.min(@canvas.width, @canvas.height) / Math.max(@board.size.rows, @board.size.cols))
     [@width, @height] = [@board.size.cols * @scale, @board.size.rows * @scale]
 
@@ -45,7 +59,7 @@ class Game
       @ctx.strokeStyle = "#eee"
       @ctx.stroke()
 
-  render: ->
+  render: =>
     @clear()
     @draw_grid()
 
@@ -55,15 +69,14 @@ class Game
     @ctx.textBaseline = "middle"
 
     for i in [0 .. @board.cols.length - 1]
-      col = @board.cols[i]
-      x = i * @scale
-      if col.length
-        for j in [0 .. col.length - 1]
-          piece = col[j]
+      if @board.cols[i].length
+        for j in [0 .. @board.cols[i].length - 1]
+          piece = @board.cols[i][j]
+          x = i * @scale
           y = @height - (j * @scale) - @scale
-          if piece
-            @ctx.fillStyle = @colors[piece.value]
-            @ctx.fillRect x, y, @scale, @scale
-            @ctx.strokeRect x, y, @scale, @scale
-            @ctx.fillStyle = "#fff"
-            @ctx.fillText piece.value, x + (@scale / 2), y + (@scale / 2)
+
+          @ctx.fillStyle = @colors[piece.value]
+          @ctx.fillRect x, y, @scale, @scale
+          @ctx.strokeRect x, y, @scale, @scale
+          @ctx.fillStyle = "#fff"
+          @ctx.fillText piece.value, x + (@scale / 2), y + (@scale / 2)
