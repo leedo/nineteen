@@ -5,9 +5,12 @@ for color in [1 .. 20]
 
 class Game
   constructor: (@canvas) ->
+    @match = null
     @dragging = null
-    @offset = [0,0]
-    @lastmouse = [0,0]
+    @dragging_offset = {x:0,y:0}
+    @dirty_drag = false
+    @dirty_drag_reset = null
+
     @board = new Board()
     @ctx = @canvas.getContext("2d")
     @render = @default_render
@@ -41,22 +44,27 @@ class Game
         return true
     return false
 
-  event_coord: (e) ->
-    [x, y] = @translated_touch(e)
-    left = x - @offset[0]
-    top = @height - (y - @offset[1])
+  coord_index: (pos) ->
+    left = pos.x - @dragging_offset.x
+    top = @height - (pos.y - @dragging_offset.y)
+    left = Math.min(Math.max(left), @width)
+    top = Math.min(Math.max(top), @height)
     col = Math.floor left / @scale
     row = Math.floor top / @scale
     return [col, row]
 
   mouseup: (e) =>
     e.preventDefault()
-    [col, row] = @event_coord e
+    [col, row] = @coord_index(@translated_touch(e))
 
-    if @board.cols[col][row]
+    if @dirty_drag
+      @dirty_drag = false
+      @dirty_drag_reset = null
+    else if @board.cols[col][row]
       piece = @board.cols[col][row]
       if piece.matches @dragging
         piece.value++
+        piece.is_match = false
         if piece.value > @board.max
           @board.max = piece.value
 
@@ -76,23 +84,21 @@ class Game
 
   translated_touch: (e) ->
     if e.targetTouches and e.targetTouches[0]
-      return [e.targetTouches[0].pageX, e.targetTouches[0].pageY]
+      return {x: e.targetTouches[0].pageX, y: e.targetTouches[0].pageY}
     else if e.pageX
-      return [e.pageX, e.pageY]
-    else
-      return @lastmouse
+      return {x: e.pageX, y: e.pageY}
 
   mousedown: (e) =>
     e.preventDefault()
-    [col, row] = @event_coord e
+    [col, row] = @coord_index(@translated_touch(e))
     if @board.cols[col][row]
       piece = @board.cols[col][row]
       piece.dragging = true
       @dragging = piece
 
-      [x, y] = @translated_touch(e)
-      left = (x - @offset[0]) % @scale
-      top = (y - @offset[1]) % @scale
+      @dragging.pos = @translated_touch(e)
+      left = (@dragging.pos.x - @dragging_offset.x) % @scale
+      top = (@dragging.pos.y - @dragging_offset.y) % @scale
       @render = @dragging_render left, top
 
       @canvas.addEventListener (if @touch then "touchmove" else "mousemove"), @render
@@ -114,7 +120,7 @@ class Game
 
     [@width, @height] = [@board.size.cols * @scale, @board.size.rows * @scale]
     [@canvas.width, @canvas.height] = [@width, @height]
-    @offset = [@canvas.offsetLeft, @canvas.offsetTop]
+    @dragging_offset = {x: @canvas.offsetLeft, y: @canvas.offsetTop}
     @render()
 
   clear: ->
@@ -148,16 +154,52 @@ class Game
       @default_render()
       # capture mouse position if render is called
       # outside of the drag event (e.g. tick)
-      if e
-        @lastmouse = @translated_touch(e)
       if @dragging
-        left = @lastmouse[0] - @offset[0]
-        top = @lastmouse[1] - @offset[1]
+        if e
+          pos = @translated_touch(e)
+          if @is_safe_pos(pos)
+            @dirty_drag = false
+            @dragging.pos = pos
+          else
+            @dirty_drag_reset = @coord_index(@dragging.pos)
+            @dirty_drag = true
+
+        left = @dragging.pos.x - @dragging_offset.x
+        top = @dragging.pos.y - @dragging_offset.y
         @draw_tile @dragging, left - offset_left, top - offset_top
+
+  is_safe_pos: (pos) ->
+    [col, row] = @coord_index(pos)
+
+    if @match
+      @match.is_match = false
+      @match = null
+
+    if @dirty_drag
+      if @dirty_drag_reset[0] == col and @dirty_drag_reset[1] == row
+        return true
+      else
+        return false
+
+    if !@board.cols[col][row] or @board.cols[col][row] is @dragging
+      return true
+
+    if @dragging.matches(@board.cols[col][row])
+      @match = @board.cols[col][row]
+      @match.is_match = true
+      return true
+
+    return false
 
   draw_tile: (piece, x, y) ->
     @ctx.fillStyle = colors[piece.value]
     @ctx.fillRect x, y, @scale, @scale
+    if piece.is_match
+      @ctx.lineWidth = 3
+      @ctx.strokeStyle = "#7fff00"
+    else
+      @ctx.lineWidth = 1
+      @ctx.strokeStyle = "#eee"
     @ctx.strokeRect x, y, @scale, @scale
     @ctx.fillStyle = "#fff"
     @ctx.fillText piece.value, x + (@scale / 2), y + (@scale / 2)
@@ -167,7 +209,6 @@ class Game
     @draw_grid()
 
     @ctx.font = (@scale * 0.66) + "px sans-serif"
-    @ctx.strokeStyle = "#eee"
     @ctx.textAlign = "center"
     @ctx.textBaseline = "middle"
 
