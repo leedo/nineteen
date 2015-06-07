@@ -16,8 +16,8 @@ class Game
     @tick()
 
     $(window).on "resize", @resize
-    $(@canvas).on "mousedown", @mousedown
-    $(@canvas).on "mouseup", @mouseup
+    $(@canvas).on "mousedown touchstart", @mousedown
+    $(@canvas).on "mouseup touchend", @mouseup
 
 
   tick: =>
@@ -44,6 +44,7 @@ class Game
     return [col, row]
 
   mouseup: (e) =>
+    e.preventDefault()
     [col, row] = @event_coord e
 
     if @board.cols[col][row]
@@ -68,6 +69,7 @@ class Game
     @render()
 
   mousedown: (e) =>
+    e.preventDefault()
     [col, row] = @event_coord e
     if @board.cols[col][row]
       piece = @board.cols[col][row]
