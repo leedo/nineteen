@@ -8,7 +8,6 @@ class Game
     @dragging = null
     @lastmouse = [0,0]
     @board = new Board()
-    @board.add_pieces()
     @ctx = @canvas.getContext("2d")
     @render = @default_render
     @resize()
