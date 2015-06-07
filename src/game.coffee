@@ -37,8 +37,9 @@ class Game
 
   event_coord: (e) ->
     offset = $(@canvas).offset()
-    left = e.pageX - offset.left
-    top = @height - (e.pageY - offset.top)
+    [x, y] = @translated_touch(e)
+    left = x - offset.left
+    top = @height - (y - offset.top)
     col = Math.floor left / @scale
     row = Math.floor top / @scale
     return [col, row]
@@ -68,6 +69,12 @@ class Game
     @render = @default_render
     @render()
 
+  translated_touch: (e) ->
+    if e.pageX
+      return [e.pageX, e.pageY]
+    else if e.targetTouches
+      return [e.targetTouches[0].pageX, e.targetTouches[0].pageY]
+
   mousedown: (e) =>
     e.preventDefault()
     [col, row] = @event_coord e
@@ -76,9 +83,10 @@ class Game
       piece.dragging = true
       @dragging = piece
 
+      [x, y] = @translated_touch(e)
       offset = $(@canvas).offset()
-      left = (e.pageX - offset.left) % @scale
-      top = (e.pageY - offset.top) % @scale
+      left = (x - offset.left) % @scale
+      top = (y - offset.top) % @scale
       @render = @dragging_render left, top
 
       $(@canvas).on "mousemove", @render
@@ -123,7 +131,7 @@ class Game
       # capture mouse position if render is called
       # outside of the drag event (e.g. tick)
       if e
-        @lastmouse = [e.pageX, e.pageY]
+        @lastmouse = @translated_touch(e)
       if @dragging
         offset = $(@canvas).offset()
         left = @lastmouse[0] - offset.left
