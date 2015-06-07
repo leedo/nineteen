@@ -17,9 +17,8 @@ class Game
 
     $(window).on "resize", @resize
 
-    touch = !!("ontouchstart" in window)
-    $(@canvas).on touch ? "touchstart" : "mousedown", @mousedown
-    $(@canvas).on touch ? "touchend"   : "mouseup"  , @mouseup
+    $(@canvas).on Modernizr.touch ? "touchstart" : "mousedown", @mousedown
+    $(@canvas).on Modernizr.touch ? "touchend"   : "mouseup"  , @mouseup
 
 
   tick: =>
