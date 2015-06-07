@@ -1,24 +1,35 @@
+colors = []
+step = Math.floor 16777215 / 20
+for color in [1 .. 20]
+  colors.push "#" + (step * color).toString(16)
+
 class Game
   constructor: (@canvas) ->
+    @dragging = null
+    @lastmouse = [0,0]
     @board = new Board()
     @board.add_pieces()
     @ctx = @canvas.getContext("2d")
+    @render = @default_render
     @resize()
 
-    @interval = setInterval @render, 100
-    @incr = setInterval @tick, 1000
+    @interval_time = 5000
+    @tick()
 
     $(window).on "resize", @resize
-    $(@canvas).on "click", @click
+    $(@canvas).on "mousedown", @mousedown
+    $(@canvas).on "mouseup", @mouseup
 
-    @colors = ["red", "green", "blue", "yellow", "orange", "pink", "purple"]
 
   tick: =>
+    console.log @interval_time
     @board.add_pieces()
+    @render()
     if @lost()
-      clearInterval @incr
-      @render()
       alert "You lose"
+    else
+      @interval_time *= 0.95
+      setTimeout @tick, @interval_time
 
   lost: ->
     for col in @board.cols
@@ -26,14 +37,61 @@ class Game
         return true
     return false
 
-  click: (e) =>
-    console.log(e)
+  event_coord: (e) ->
+    offset = $(@canvas).offset()
+    left = e.pageX - offset.left
+    top = @height - (e.pageY - offset.top)
+    col = Math.floor left / @scale
+    row = Math.floor top / @scale
+    return [col, row]
+
+  mouseup: (e) =>
+    [col, row] = @event_coord e
+
+    if @board.cols[col][row]
+      piece = @board.cols[col][row]
+      if piece.matches @dragging
+        piece.value++
+        if piece.value > @max
+          @max = piece.value
+
+        for x in [0 .. @board.cols.length - 1]
+          for y in [0 .. @board.cols[x].length - 1]
+            if @board.cols[x][y] is @dragging
+              @board.cols[x].splice(y, 1)
+
+    $(@canvas).off "mousemove"
+
+    if @dragging
+      @dragging.dragging = false
+      @dragging = null
+
+    @render = @default_render
+    @render()
+
+  mousedown: (e) =>
+    [col, row] = @event_coord e
+    if @board.cols[col][row]
+      piece = @board.cols[col][row]
+      piece.dragging = true
+      @dragging = piece
+
+      offset = $(@canvas).offset()
+      left = (e.pageX - offset.left) % @scale
+      top = (e.pageY - offset.top) % @scale
+      @render = @dragging_render left, top
+
+      $(@canvas).on "mousemove", @render
 
   resize: =>
     @scale = parseInt(Math.min(@canvas.width, @canvas.height) / Math.max(@board.size.rows, @board.size.cols))
     [@width, @height] = [@board.size.cols * @scale, @board.size.rows * @scale]
+    @canvas.width = @width
+    @canvas.height = @height
+    @render()
 
   clear: ->
+
     @ctx.fillStyle = "#fff"
     @ctx.fillRect 0, 0, @width, @height
 
@@ -59,7 +117,27 @@ class Game
       @ctx.strokeStyle = "#eee"
       @ctx.stroke()
 
-  render: =>
+  dragging_render: (offset_left, offset_top) ->
+    (e) =>
+      @default_render()
+      # capture mouse position if render is called
+      # outside of the drag event (e.g. tick)
+      if e
+        @lastmouse = [e.pageX, e.pageY]
+      if @dragging
+        offset = $(@canvas).offset()
+        left = @lastmouse[0] - offset.left
+        top = @lastmouse[1] - offset.top
+        @draw_tile @dragging, left - offset_left, top - offset_top
+
+  draw_tile: (piece, x, y) ->
+    @ctx.fillStyle = colors[piece.value]
+    @ctx.fillRect x, y, @scale, @scale
+    @ctx.strokeRect x, y, @scale, @scale
+    @ctx.fillStyle = "#fff"
+    @ctx.fillText piece.value, x + (@scale / 2), y + (@scale / 2)
+
+  default_render: ->
     @clear()
     @draw_grid()
 
@@ -72,11 +150,7 @@ class Game
       if @board.cols[i].length
         for j in [0 .. @board.cols[i].length - 1]
           piece = @board.cols[i][j]
-          x = i * @scale
-          y = @height - (j * @scale) - @scale
-
-          @ctx.fillStyle = @colors[piece.value]
-          @ctx.fillRect x, y, @scale, @scale
-          @ctx.strokeRect x, y, @scale, @scale
-          @ctx.fillStyle = "#fff"
-          @ctx.fillText piece.value, x + (@scale / 2), y + (@scale / 2)
+          if !piece.dragging
+            x = i * @scale
+            y = @height - (j * @scale) - @scale
+            @draw_tile piece, x, y

@@ -6,5 +6,5 @@ class Piece
   drag: (event) ->
     @dragging = true
 
-  matches: (value) ->
-    return value == @value
+  matches: (piece) ->
+    return piece isnt this && piece.value == @value
