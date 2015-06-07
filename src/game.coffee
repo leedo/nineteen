@@ -14,7 +14,7 @@ class Game
     @touch = Modernizr.touch
     @resize()
 
-    @interval_time = 5000
+    @interval_time = 6000
     @tick()
 
     window.addEventListener "resize", @resize
@@ -32,7 +32,7 @@ class Game
     if @lost()
       alert "You lose"
     else
-      @interval_time *= 0.95
+      @interval_time *= 0.99
       setTimeout @tick, @interval_time
 
   lost: ->
