@@ -16,8 +16,10 @@ class Game
     @tick()
 
     $(window).on "resize", @resize
-    $(@canvas).on "mousedown touchstart", @mousedown
-    $(@canvas).on "mouseup touchend", @mouseup
+
+    touch = !!("ontouchstart" in window)
+    $(@canvas).on touch ? "touchstart" : "mousedown", @mousedown
+    $(@canvas).on touch ? "touchend"   : "mouseup"  , @mouseup
 
 
   tick: =>
