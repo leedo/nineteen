@@ -57,6 +57,10 @@ class Game
     e.preventDefault()
     [col, row] = @coord_index(@translated_touch(e))
 
+    if @board.cols[col][row]
+      @board.cols[col][row].is_match = false
+      @board.cols[col][row].is_miss = false
+
     if @dirty_drag
       @dirty_drag = false
       @dirty_drag_reset = null
@@ -64,7 +68,6 @@ class Game
       piece = @board.cols[col][row]
       if piece.matches @dragging
         piece.value++
-        piece.is_match = false
         if piece.value > @board.max
           @board.max = piece.value
 
@@ -77,6 +80,8 @@ class Game
 
     if @dragging
       @dragging.dragging = false
+      @dragging.is_miss = false
+      @dragging.is_match = false
       @dragging = null
 
     @render = @default_render
@@ -172,7 +177,10 @@ class Game
     [col, row] = @coord_index(pos)
 
     if @match
+      @dragging.is_match = false
+      @dragging.is_miss = false
       @match.is_match = false
+      @match.is_miss = false
       @match = null
 
     if @dirty_drag
@@ -187,22 +195,37 @@ class Game
     if @dragging.matches(@board.cols[col][row])
       @match = @board.cols[col][row]
       @match.is_match = true
+      @dragging.is_match = true
       return true
+    else
+      @board.cols[col][row].is_miss = true
+      @dragging.is_miss = true
 
     return false
 
   draw_tile: (piece, x, y) ->
-    @ctx.fillStyle = colors[piece.value]
-    @ctx.fillRect x, y, @scale, @scale
-    if piece.is_match
+    if piece.is_match && !piece.dragging
       @ctx.lineWidth = 3
       @ctx.strokeStyle = "#7fff00"
+    else if piece.is_miss && !piece.dragging
+      @ctx.lineWidth = 3
+      @ctx.strokeStyle = "red"
     else
       @ctx.lineWidth = 1
       @ctx.strokeStyle = "#eee"
+
+    if piece.dragging and (piece.is_miss or piece.is_match)
+      @ctx.globalAlpha = 0.5
+    else
+      @ctx.globalAlpha = 1
+
+    @ctx.fillStyle = colors[piece.value]
+    @ctx.fillRect x, y, @scale, @scale
     @ctx.strokeRect x, y, @scale, @scale
     @ctx.fillStyle = "#fff"
     @ctx.fillText piece.value, x + (@scale / 2), y + (@scale / 2)
+
+    @ctx.globalAlpha = 1
 
   default_render: ->
     @clear()
