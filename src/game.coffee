@@ -57,8 +57,8 @@ class Game
       piece = @board.cols[col][row]
       if piece.matches @dragging
         piece.value++
-        if piece.value > @max
-          @max = piece.value
+        if piece.value > @board.max
+          @board.max = piece.value
 
         for x in [0 .. @board.cols.length - 1]
           for y in [0 .. @board.cols[x].length - 1]
