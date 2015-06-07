@@ -71,10 +71,10 @@ class Game
     @render()
 
   translated_touch: (e) ->
-    if e.pageX
-      return [e.pageX, e.pageY]
-    else if e.targetTouches
+    if e.targetTouches
       return [e.targetTouches[0].pageX, e.targetTouches[0].pageY]
+    else if e.pageX
+      return [e.pageX, e.pageY]
 
   mousedown: (e) =>
     e.preventDefault()
