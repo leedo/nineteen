@@ -6,6 +6,5 @@ html, body {
 
 #board {
   display: block;
-  margin: 20px auto;
-  width: 500px;
+  margin: 0 auto;
 }

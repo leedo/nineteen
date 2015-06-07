@@ -82,7 +82,7 @@ class Game
       $(@canvas).on "mousemove", @render
 
   resize: =>
-    @scale = parseInt(Math.min(@canvas.width, @canvas.height) / Math.max(@board.size.rows, @board.size.cols))
+    @scale = parseInt(Math.min(window.innerWidth, window.innerHeight) / Math.max(@board.size.rows, @board.size.cols))
     [@width, @height] = [@board.size.cols * @scale, @board.size.rows * @scale]
     @canvas.width = @width
     @canvas.height = @height
