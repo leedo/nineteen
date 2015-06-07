@@ -17,8 +17,8 @@ class Game
 
     $(window).on "resize", @resize
 
-    $(@canvas).on (if Modernizr.touch then "touchstart" else "mousedown"), @mousedown
-    $(@canvas).on (if Modernizr.touch then "touchend" else "mouseup")  , @mouseup
+    @canvas.addEventListener (if Modernizr.touch then "touchstart" else "mousedown"), @mousedown
+    @canvas.addEventListener (if Modernizr.touch then "touchend" else "mouseup")  , @mouseup
 
 
   tick: =>
