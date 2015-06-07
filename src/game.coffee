@@ -6,19 +6,20 @@ for color in [1 .. 20]
 class Game
   constructor: (@canvas) ->
     @dragging = null
+    @offset = [0,0]
     @lastmouse = [0,0]
     @board = new Board()
     @ctx = @canvas.getContext("2d")
     @render = @default_render
+    @touch = Modernizr.touch
     @resize()
 
     @interval_time = 5000
     @tick()
 
-    $(window).on "resize", @resize
-
-    @canvas.addEventListener (if Modernizr.touch then "touchstart" else "mousedown"), @mousedown
-    @canvas.addEventListener (if Modernizr.touch then "touchend" else "mouseup")  , @mouseup
+    window.addEventListener "resize", @resize
+    @canvas.addEventListener (if @touch then "touchstart" else "mousedown"), @mousedown
+    @canvas.addEventListener (if @touch then "touchend" else "mouseup")  , @mouseup
 
 
   tick: =>
@@ -37,10 +38,9 @@ class Game
     return false
 
   event_coord: (e) ->
-    offset = $(@canvas).offset()
     [x, y] = @translated_touch(e)
-    left = x - offset.left
-    top = @height - (y - offset.top)
+    left = x - @offset[0]
+    top = @height - (y - @offset[1])
     col = Math.floor left / @scale
     row = Math.floor top / @scale
     return [col, row]
@@ -61,7 +61,7 @@ class Game
             if @board.cols[x][y] is @dragging
               @board.cols[x].splice(y, 1)
 
-    $(@canvas).off "mousemove"
+    @canvas.removeEventListener (if @touch then "touchmove" else "mousemove"), @render
 
     if @dragging
       @dragging.dragging = false
@@ -71,10 +71,12 @@ class Game
     @render()
 
   translated_touch: (e) ->
-    if e.targetTouches
+    if e.targetTouches and e.targetTouches[0]
       return [e.targetTouches[0].pageX, e.targetTouches[0].pageY]
     else if e.pageX
       return [e.pageX, e.pageY]
+    else
+      return @lastmouse
 
   mousedown: (e) =>
     e.preventDefault()
@@ -85,18 +87,18 @@ class Game
       @dragging = piece
 
       [x, y] = @translated_touch(e)
-      offset = $(@canvas).offset()
-      left = (x - offset.left) % @scale
-      top = (y - offset.top) % @scale
+      left = (x - @offset[0]) % @scale
+      top = (y - @offset[1]) % @scale
       @render = @dragging_render left, top
 
-      $(@canvas).on "mousemove", @render
+      @canvas.addEventListener (if @touch then "touchmove" else "mousemove"), @render
 
   resize: =>
     @scale = parseInt(Math.min(window.innerWidth, window.innerHeight) / Math.max(@board.size.rows, @board.size.cols))
     [@width, @height] = [@board.size.cols * @scale, @board.size.rows * @scale]
     @canvas.width = @width
     @canvas.height = @height
+    @offset = [@canvas.offsetLeft, @canvas.offsetTop]
     @render()
 
   clear: ->
@@ -134,9 +136,8 @@ class Game
       if e
         @lastmouse = @translated_touch(e)
       if @dragging
-        offset = $(@canvas).offset()
-        left = @lastmouse[0] - offset.left
-        top = @lastmouse[1] - offset.top
+        left = @lastmouse[0] - @offset[0]
+        top = @lastmouse[1] - @offset[1]
         @draw_tile @dragging, left - offset_left, top - offset_top
 
   draw_tile: (piece, x, y) ->
