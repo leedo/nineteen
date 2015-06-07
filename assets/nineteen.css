@@ -1,7 +1,10 @@
-html, body {
+body {
   margin: 0;
   padding: 0;
   background: #eee;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 #board {

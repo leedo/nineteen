@@ -21,6 +21,10 @@ class Game
     @canvas.addEventListener (if @touch then "touchstart" else "mousedown"), @mousedown
     @canvas.addEventListener (if @touch then "touchend" else "mouseup")  , @mouseup
 
+    # stop fucky scrolls on touch
+    if @touch
+      window.addEventListener "touchstart", (e) -> e.preventDefault()
+
 
   tick: =>
     @board.add_pieces()
@@ -94,15 +98,16 @@ class Game
       @canvas.addEventListener (if @touch then "touchmove" else "mousemove"), @render
 
   resize: =>
-    @scale = parseInt(Math.min(window.innerWidth, window.innerHeight) / Math.max(@board.size.rows, @board.size.cols))
+    if window.innerWidth > window.innerHeight
+      @scale = parseInt(window.innerHeight / @board.size.rows)
+    else
+      @scale = parseInt(window.innerWidth / @board.size.cols)
     [@width, @height] = [@board.size.cols * @scale, @board.size.rows * @scale]
-    @canvas.width = @width
-    @canvas.height = @height
+    [@canvas.width, @canvas.height] = [@width, @height]
     @offset = [@canvas.offsetLeft, @canvas.offsetTop]
     @render()
 
   clear: ->
-
     @ctx.fillStyle = "#fff"
     @ctx.fillRect 0, 0, @width, @height
 
