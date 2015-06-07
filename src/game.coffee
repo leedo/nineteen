@@ -22,7 +22,6 @@ class Game
 
 
   tick: =>
-    console.log @interval_time
     @board.add_pieces()
     @render()
     if @lost()
