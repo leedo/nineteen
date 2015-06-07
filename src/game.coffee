@@ -6,6 +6,7 @@ for color in [1 .. 20]
 class Game
   constructor: (@canvas) ->
     @match = null
+    @miss = null
     @dragging = null
     @dragging_offset = {x:0,y:0}
     @dirty_drag = false
@@ -57,9 +58,7 @@ class Game
     e.preventDefault()
     [col, row] = @coord_index(@translated_touch(e))
 
-    if @board.cols[col][row]
-      @board.cols[col][row].is_match = false
-      @board.cols[col][row].is_miss = false
+    @clear_states()
 
     if @dirty_drag
       @dirty_drag = false
@@ -154,6 +153,17 @@ class Game
       @ctx.strokeStyle = "#eee"
       @ctx.stroke()
 
+  clear_states: ->
+    if @match
+      @dragging.is_match = false
+      @match.is_match = false
+      @match = null
+
+    if @miss
+      @dragging.is_miss = false
+      @miss.is_miss = false
+      @miss = null
+
   dragging_render: (offset_left, offset_top) ->
     (e) =>
       @default_render()
@@ -176,18 +186,13 @@ class Game
   is_safe_pos: (pos) ->
     [col, row] = @coord_index(pos)
 
-    if @match
-      @dragging.is_match = false
-      @dragging.is_miss = false
-      @match.is_match = false
-      @match.is_miss = false
-      @match = null
-
     if @dirty_drag
       if @dirty_drag_reset[0] == col and @dirty_drag_reset[1] == row
         return true
       else
         return false
+
+    @clear_states()
 
     if !@board.cols[col][row] or @board.cols[col][row] is @dragging
       return true
@@ -198,7 +203,8 @@ class Game
       @dragging.is_match = true
       return true
     else
-      @board.cols[col][row].is_miss = true
+      @miss = @board.cols[col][row]
+      @miss.is_miss = true
       @dragging.is_miss = true
 
     return false
