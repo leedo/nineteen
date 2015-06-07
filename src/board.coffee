@@ -1,7 +1,7 @@
 class Board
   constructor: ->
     @max  = 2
-    @size = {cols: 7, rows: 8}
+    @size = {cols: 7, rows: 10}
     @cols = @empty_board()
 
   empty_board: ->

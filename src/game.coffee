@@ -98,10 +98,20 @@ class Game
       @canvas.addEventListener (if @touch then "touchmove" else "mousemove"), @render
 
   resize: =>
+    scaley = parseInt(window.innerHeight / @board.size.rows)
+    scalex = parseInt(window.innerWidth / @board.size.cols)
+
     if window.innerWidth > window.innerHeight
-      @scale = parseInt(window.innerHeight / @board.size.rows)
+      if scaley * @board.size.cols <= window.innerWidth
+        @scale = scaley
+      else
+        @scale = scalex
     else
-      @scale = parseInt(window.innerWidth / @board.size.cols)
+      if scalex * @board.size.rows <= window.innerHeight
+        @scale = scalex
+      else
+        @scale = scaley
+
     [@width, @height] = [@board.size.cols * @scale, @board.size.rows * @scale]
     [@canvas.width, @canvas.height] = [@width, @height]
     @offset = [@canvas.offsetLeft, @canvas.offsetTop]
